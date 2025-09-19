@@ -1,103 +1,113 @@
-// 🔹 Reemplaza con tus datos de Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getDatabase, ref, set, update, onValue, push } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+// 🔹 TU CONFIG DE FIREBASE (copiala desde Firebase Console)
 const firebaseConfig = {
-  apiKey: "AIzaSyBymZKY15hibNUuNRU3STdv3N2lhqGoRng",
-  authDomain: "pokerwebapp-1036a.firebaseapp.com",
-  databaseURL: "https://pokerwebapp-1036a-default-rtdb.firebaseio.com",
-  projectId: "pokerwebapp-1036a",
-  storageBucket: "pokerwebapp-1036a.firebasestorage.app",
-  messagingSenderId: "865014554890",
-  appId: "1:865014554890:web:123eb4c3a51b1211afdaf3"
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
+  databaseURL: "https://TU_PROYECTO.firebaseio.com",
+  projectId: "TU_PROYECTO",
 };
-firebase.initializeApp(firebaseConfig);
 
-const auth = firebase.auth();
-const db = firebase.database();
-let currentRoom = null;
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+let uid = null;
+let roomId = null;
 let isHost = false;
+let playersJoined = {};
 
-// Login anónimo
-function loginAnon() {
-  auth.signInAnonymously()
-    .then(() => {
-      document.getElementById("login").style.display = "none";
-      document.getElementById("lobby").style.display = "block";
-    });
-}
+// 🔹 Login anónimo
+signInAnonymously(auth).then(user => {
+  uid = user.user.uid;
+});
 
-// Crear / unirse a sala
-function joinRoom() {
-  const uid = auth.currentUser.uid;
-  let rid = document.getElementById("roomId").value.trim();
-  if(!rid) rid = db.ref("rooms").push().key;
-  currentRoom = rid;
-  document.getElementById("roomLabel").innerText = rid;
-
-  const playerRef = db.ref(`rooms/${rid}/players/${uid}`);
-  playerRef.set({uid: uid, joinedAt: Date.now()});
-  playerRef.onDisconnect().remove();
-
-  listenRoom(rid);
-
-  // Si sos el primero en la sala, sos host
-  db.ref(`rooms/${rid}/players`).once("value").then(snap=>{
-    isHost = Object.keys(snap.val() || {}).length === 1;
+// Crear sala
+document.getElementById("createBtn").addEventListener("click", () => {
+  roomId = push(ref(db, "rooms")).key;
+  isHost = true;
+  set(ref(db, "rooms/" + roomId), {
+    host: uid,
+    players: { [uid]: true },
+    game: { status: "Esperando" }
   });
+  document.getElementById("roomInfo").innerText = "Sala: " + roomId;
+  document.getElementById("dealBtn").style.display = "inline-block";
+});
 
-  document.getElementById("lobby").style.display="none";
-  document.getElementById("game").style.display="block";
-}
+// Unirse a sala
+document.getElementById("joinBtn").addEventListener("click", () => {
+  const joinId = prompt("Ingresa el ID de la sala:");
+  if (!joinId) return;
+  roomId = joinId;
+  update(ref(db, "rooms/" + roomId + "/players"), { [uid]: true });
+  document.getElementById("roomInfo").innerText = "Sala: " + roomId;
+});
 
 // Escuchar cambios en la sala
-function listenRoom(rid){
-  db.ref(`rooms/${rid}/players`).on("value", snap=>{
-    const players = snap.val() || {};
-    document.getElementById("players").innerText="Jugadores: "+Object.keys(players).length;
-  });
+function listenRoom(roomId) {
+  onValue(ref(db, "rooms/" + roomId), snapshot => {
+    const data = snapshot.val();
+    if (!data) return;
 
-  db.ref(`rooms/${rid}/hands/${auth.currentUser.uid}`).on("value", snap=>{
-    const hand = snap.val();
-    document.getElementById("hand").innerText = hand ? "Tu mano: "+hand.join(", ") : "Esperando cartas...";
-  });
+    playersJoined = data.players || {};
 
-  db.ref(`rooms/${rid}/board`).on("value", snap=>{
-    const board = snap.val();
-    document.getElementById("board").innerText = board ?
-      "Mesa: Flop: "+(board.flop||[]).join(",")+" | Turn: "+(board.turn||"")+" | River: "+(board.river||"")
-      : "";
+    if (data.game && data.game.players) {
+      renderGame(data.game);
+    } else {
+      document.getElementById("game").innerText = "Esperando cartas...";
+    }
   });
 }
 
-// Repartir cartas (solo host)
-function dealCards(){
-  if(!isHost) return alert("Solo el host puede repartir");
+setInterval(() => {
+  if (roomId) listenRoom(roomId);
+}, 1000);
 
-  const roomRef = db.ref(`rooms/${currentRoom}`);
-  const suits = ["♠","♥","♦","♣"];
-  const ranks = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
+// Repartir cartas
+function dealCards(roomId) {
+  const suits = ["♠", "♥", "♦", "♣"];
+  const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+
   let deck = [];
-  suits.forEach(s=>ranks.forEach(r=>deck.push(r+s)));
+  suits.forEach(suit => ranks.forEach(rank => deck.push(rank + suit)));
+  deck.sort(() => Math.random() - 0.5);
 
-  // Mezclar
-  for(let i=deck.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [deck[i],deck[j]]=[deck[j],deck[i]];
-  }
-
-  // Repartir a jugadores
-  roomRef.child("players").once("value").then(snap=>{
-    const players = snap.val() || {};
-    const updates = {};
-    Object.keys(players).forEach(uid=>{
-      updates[`hands/${uid}`] = [deck.pop(), deck.pop()];
-    });
-
-    // Cartas comunitarias
-    updates["board"] = {
-      flop: [deck.pop(), deck.pop(), deck.pop()],
-      turn: deck.pop(),
-      river: deck.pop()
-    };
-
-    roomRef.update(updates);
+  let players = {};
+  Object.keys(playersJoined).forEach(uid => {
+    players[uid] = [deck.pop(), deck.pop()];
   });
+
+  update(ref(db, "rooms/" + roomId + "/game"), {
+    players: players,
+    community: [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()],
+    status: "Jugando"
+  });
+}
+
+document.getElementById("dealBtn").addEventListener("click", () => {
+  if (isHost && roomId) {
+    dealCards(roomId);
+  } else {
+    alert("Solo el host puede repartir las cartas.");
+  }
+});
+
+// Renderizar partida
+function renderGame(game) {
+  let html = "<h2>Cartas de la mesa:</h2>";
+  html += `<div class="cards">${game.community.join(" ")}</div>`;
+  html += "<h2>Jugadores:</h2>";
+
+  Object.keys(game.players).forEach(pid => {
+    if (pid === uid) {
+      html += `<p><b>Tus cartas:</b> <span class="cards">${game.players[pid].join(" ")}</span></p>`;
+    } else {
+      html += `<p>Jugador ${pid.substring(0, 5)}: <span class="cards">[?? ??]</span></p>`;
+    }
+  });
+
+  document.getElementById("game").innerHTML = html;
 }
