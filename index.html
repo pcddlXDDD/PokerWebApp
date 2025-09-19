@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Poker Hold'em WebApp</title>
+</head>
+<body>
+<h1>Poker Hold'em Online</h1>
+
+<div id="login">
+  <button onclick="loginAnon()">Entrar como invitado</button>
+</div>
+
+<div id="lobby" style="display:none">
+  <input id="roomId" placeholder="ID sala (vacío para crear)">
+  <button onclick="joinRoom()">Unirse / Crear sala</button>
+  <button onclick="dealCards()">Repartir cartas (host)</button>
+  <p id="players"></p>
+</div>
+
+<div id="game" style="display:none">
+  <h2>Sala: <span id="roomLabel"></span></h2>
+  <p id="hand"></p>
+  <p id="board"></p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
