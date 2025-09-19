@@ -1,33 +1,22 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Poker Hold'em WebApp</title>
+  <meta charset="UTF-8">
+  <title>Poker Hold'em Online</title>
+  <script type="module" src="main.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+    #game { margin-top: 20px; }
+    .cards { font-size: 22px; margin: 10px 0; }
+  </style>
 </head>
 <body>
-<h1>Poker Hold'em Online</h1>
-
-<div id="login">
-  <button onclick="loginAnon()">Entrar como invitado</button>
-</div>
-
-<div id="lobby" style="display:none">
-  <input id="roomId" placeholder="ID sala (vacío para crear)">
-  <button onclick="joinRoom()">Unirse / Crear sala</button>
-  <button onclick="dealCards()">Repartir cartas (host)</button>
-  <p id="players"></p>
-</div>
-
-<div id="game" style="display:none">
-  <h2>Sala: <span id="roomLabel"></span></h2>
-  <p id="hand"></p>
-  <p id="board"></p>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="main.js"></script>
+  <h1>Poker Hold'em Online</h1>
+  <p id="roomInfo"></p>
+  <button id="createBtn">Crear sala</button>
+  <button id="joinBtn">Unirse a sala</button>
+  <button id="dealBtn" style="display:none;">Repartir cartas (Host)</button>
+  <div id="game">Esperando cartas...</div>
 </body>
 </html>
