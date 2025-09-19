@@ -4,10 +4,13 @@ import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/1
 
 // 🔹 TU CONFIG DE FIREBASE (copiala desde Firebase Console)
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_PROYECTO.firebaseapp.com",
-  databaseURL: "https://TU_PROYECTO.firebaseio.com",
-  projectId: "TU_PROYECTO",
+  apiKey: "AIzaSyBymZKY15hibNUuNRU3STdv3N2lhqGoRng",
+  authDomain: "pokerwebapp-1036a.firebaseapp.com",
+  databaseURL: "https://pokerwebapp-1036a-default-rtdb.firebaseio.com",
+  projectId: "pokerwebapp-1036a",
+  storageBucket: "pokerwebapp-1036a.firebasestorage.app",
+  messagingSenderId: "865014554890",
+  appId: "1:865014554890:web:123eb4c3a51b1211afdaf3"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -110,4 +113,4 @@ function renderGame(game) {
   });
 
   document.getElementById("game").innerHTML = html;
-}
+          }
